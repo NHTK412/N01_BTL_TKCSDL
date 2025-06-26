@@ -1,0 +1,38 @@
+name: Build Python App for All Platforms
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build with PyInstaller
+        working-directory: ./src
+        run: |
+          pyinstaller --onefile --noconsole main_window.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}
+          path: src/dist/
