@@ -4,7 +4,7 @@ from data_structures.functional_dependency import FD
 import copy
 from itertools import combinations
 from util.util import util
-class key_finder(tk.Frame):
+class KeyFinderFrame(tk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent)

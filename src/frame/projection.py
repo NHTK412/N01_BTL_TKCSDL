@@ -6,7 +6,7 @@ import copy
 from itertools import combinations
 from util.util import util
 
-class FDProjectionCalculator(tk.Frame):
+class ProjectionFrame(tk.Frame):
     
     def __init__(self, parent):
         super().__init__(parent)

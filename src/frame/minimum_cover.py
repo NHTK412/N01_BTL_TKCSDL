@@ -5,7 +5,7 @@ from data_structures.functional_dependency import FD
 import copy
 from util.util import util
 
-class MinimumCoverCalculator(tk.Frame):
+class MinimumCoverFrame(tk.Frame):
    
     def __init__(self, parent):
         super().__init__(parent)

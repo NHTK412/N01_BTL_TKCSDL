@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, Menu
 
-from frame.key_finder import key_finder
-from frame.MinimumCoverCalculator import MinimumCoverCalculator
-from frame.FDReader import FDReader
-from frame.FDProjectionCalculator import FDProjectionCalculator
+from frame.key_finder import KeyFinderFrame
+from frame.minimum_cover import MinimumCoverFrame
+from frame.equivalence import EquivalenceFrame
+from frame.projection import ProjectionFrame
 
 
 class main_window(tk.Tk):
@@ -46,13 +46,13 @@ class main_window(tk.Tk):
         self.create_menu()
         self.frames = {}
         
-        for F in (key_finder, MinimumCoverCalculator, FDReader, FDProjectionCalculator):
+        for F in (KeyFinderFrame, MinimumCoverFrame, EquivalenceFrame, ProjectionFrame):
             frame = F(self)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
             # frame.pack()
 
-        self.show_frame(key_finder)
+        self.show_frame(KeyFinderFrame)
 
     def show_frame(self, frame_class):
         frame = self.frames[frame_class]
@@ -87,15 +87,15 @@ class main_window(tk.Tk):
     def create_menu(self):
         menu = Menu(self)
         frame_menu = {
-        "Tìm Khóa": key_finder,
-        "Rút Gọn Phụ Thuộc Hàm": MinimumCoverCalculator,
-        "Đọc Phụ Thuộc Hàm từ File": FDReader,
-        "FDProjectionCalculator": FDProjectionCalculator
+        "Kiểm Tra Tương Đương": EquivalenceFrame,
+        "Rút Gọn Phụ Thuộc Hàm": MinimumCoverFrame,
+        "Chiếu Phụ Thuộc Hàm": ProjectionFrame,
+        "Tìm Khóa": KeyFinderFrame
         }
+
         for label, frame_class in frame_menu.items():
             menu.add_command(label=label, command=lambda f=frame_class: self.show_frame(f))
-        # menu.add_cascade(label="Key Finder", command = lambda: self.show_frame(key_finder))
-        # menu.add_cascade(label="Minimum Cover Calculator", command = lambda: self.show_frame(MinimumCoverCalculator))
+      
 
         menu_member = Menu(menu)
         for i in self.DANH_SACH_TV:

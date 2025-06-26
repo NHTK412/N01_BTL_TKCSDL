@@ -6,7 +6,7 @@ from util.util import util
 
 import os
 
-class FDReader(tk.Frame):
+class EquivalenceFrame(tk.Frame):
    
     
     def __init__(self, parent):
