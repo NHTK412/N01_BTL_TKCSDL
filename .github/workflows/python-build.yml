@@ -2,6 +2,8 @@ name: Build Python App for All Platforms
 
 on:
   push:
+    tags:
+      - "v*"  # Chỉ chạy khi push tag bắt đầu với "v"
     branches: [ "master" ]
   workflow_dispatch:
 
@@ -12,33 +14,59 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: main_window-linux
+          - os: windows-latest
+            artifact_name: main_window-windows.exe
+          - os: macos-latest
+            artifact_name: main_window-macos
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      - name: Install PyInstaller
-        run: pip install pyinstaller
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
 
-      - name: Build with PyInstaller
+      - name: Build with PyInstaller (Windows)
+        if: matrix.os == 'windows-latest'
         working-directory: ./src
         run: |
           pyinstaller --onefile --noconsole main_window.py
+          move dist\main_window.exe dist\main_window-windows.exe
 
-      - name: Rename output file with platform
-        working-directory: ./src/dist
+      - name: Build with PyInstaller (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        working-directory: ./src
         run: |
-          mv main_window main_window-${{ matrix.os }} || mv main_window.exe main_window-${{ matrix.os }}.exe
+          pyinstaller --onefile --noconsole main_window.py
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            mv dist/main_window dist/main_window-linux
+          else
+            mv dist/main_window dist/main_window-macos
+          fi
 
-      - name: Upload to GitHub Release
+      - name: Upload artifacts (for non-tag pushes)
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: src/dist/${{ matrix.artifact_name }}
+
+      - name: Upload to GitHub Release (for tag pushes)
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: src/dist/main_window-${{ matrix.os }}*
+          files: src/dist/${{ matrix.artifact_name }}
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
