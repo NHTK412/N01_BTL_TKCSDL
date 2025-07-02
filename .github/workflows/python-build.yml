@@ -31,8 +31,14 @@ jobs:
         run: |
           pyinstaller --onefile --noconsole main_window.py
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Rename output file with platform
+        working-directory: ./src/dist
+        run: |
+          mv main_window main_window-${{ matrix.os }} || mv main_window.exe main_window-${{ matrix.os }}.exe
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: build-${{ matrix.os }}
-          path: src/dist/
+          files: src/dist/main_window-${{ matrix.os }}*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
