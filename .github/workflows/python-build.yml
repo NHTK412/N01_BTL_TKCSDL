@@ -1,37 +1,83 @@
 name: Build Python App for All Platforms
+
 on:
   push:
     branches: [ "master" ]
+    tags:
+      - 'v*'  # Trigger khi có tag bắt đầu bằng 'v'
   workflow_dispatch:
 
 jobs:
   build:
     name: Build for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-
+    
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+      
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-
+      
       - name: Install PyInstaller
         run: pip install pyinstaller
-
-      - name: Build with PyInstaller
+      
+      - name: Build with PyInstaller (Linux/Mac)
+        if: runner.os != 'Windows'
         working-directory: ./src
         run: |
           pyinstaller --onefile --noconsole main_window.py
-
+          mv dist/main_window dist/main_window-${{ runner.os }}-${{ runner.arch }}
+      
+      - name: Build with PyInstaller (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ./src
+        run: |
+          pyinstaller --onefile --noconsole main_window.py
+          ren dist\main_window.exe main_window-Windows-${{ runner.arch }}.exe
+      
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.os }}
           path: src/dist/
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')  # Chỉ chạy khi có tag
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+      
+      - name: Display structure of downloaded files
+        run: ls -la ./artifacts/
+      
+      - name: Prepare release assets
+        run: |
+          mkdir -p ./release-assets
+          find ./artifacts -name "main_window*" -type f -exec cp {} ./release-assets/ \;
+          ls -la ./release-assets/
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
