@@ -181,7 +181,7 @@ class KeyFinderFrame(tk.Frame):
         self.result_text.config(yscrollcommand=result_scroll.set)
         
     def open_file(self):
-        """Mở và đọc file"""
+        """Mở và đọc file theo cấu trúc mới"""
         file_path = filedialog.askopenfilename(
             title="Chọn file tập phụ thuộc hàm",
             filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
@@ -202,30 +202,42 @@ class KeyFinderFrame(tk.Frame):
             
             # Đọc file
             with open(file_path, 'r', encoding='utf-8') as file:
-                file_data = file.read()
+                file_data = file.read().strip()
             
-            file_data = file_data.split('\n')
+            if not file_data:
+                messagebox.showwarning("Cảnh báo", "File rỗng!")
+                return
+            
+            lines = file_data.split('\n')
+            lines = [line.strip() for line in lines if line.strip()]
+            
+            if len(lines) < 2:
+                messagebox.showwarning("Cảnh báo", "File phải có ít nhất 2 dòng (quan hệ và phụ thuộc hàm)!")
+                return
+            
+            # Dòng đầu tiên là tập thuộc tính của quan hệ
+            relation_line = lines[0].strip()
+            self.all_attributes = set(relation_line.replace(' ', ''))
+            
+            # Hiển thị tập thuộc tính R
+            self.fd_text.insert(tk.END, f"Tập thuộc tính R = {{{', '.join(sorted(self.all_attributes))}}}\n")
+            self.fd_text.insert(tk.END, f"Số thuộc tính: {len(self.all_attributes)}\n\n")
+            
+            # Các dòng tiếp theo là phụ thuộc hàm
             fd_count = 0
-
-            for line in file_data:
+            for i, line in enumerate(lines[1:], 1):
                 line = line.strip()
                 if not line:
                     continue
                 
-                # Phân tích phụ thuộc hàm
-                fd = util.parse_fd_line(line)
+                # Phân tích phụ thuộc hàm theo định dạng mới
+                fd = self.parse_new_fd_format(line)
                 if fd:
                     self.fd_set.append(fd)
                     fd_count += 1
                     self.fd_text.insert(tk.END, f"FD{fd_count}: {fd}\n")
-                    
-                    # Thu thập tất cả thuộc tính
-                    self.all_attributes.update(fd.getLhs())
-                    self.all_attributes.update(fd.getRhs())
-
-            # Hiển thị tập thuộc tính R
-            self.fd_text.insert(tk.END, f"\nTập thuộc tính R = {{{', '.join(sorted(self.all_attributes))}}}\n")
-            self.fd_text.insert(tk.END, f"Số thuộc tính: {len(self.all_attributes)}\n")
+                else:
+                    self.fd_text.insert(tk.END, f"Lỗi phân tích dòng {i+1}: {line}\n")
             
             self.fd_text.config(state=tk.DISABLED)
             
@@ -236,12 +248,46 @@ class KeyFinderFrame(tk.Frame):
             # Cập nhật thống kê
             self.update_stats()
             
-            messagebox.showinfo("Thành công", f"Đã đọc {fd_count} phụ thuộc hàm!")
+            messagebox.showinfo("Thành công", f"Đã đọc {fd_count} phụ thuộc hàm từ quan hệ với {len(self.all_attributes)} thuộc tính!")
             
         except Exception as e:
             messagebox.showerror("Lỗi", f"Không thể đọc file: {str(e)}")
-            
     
+    def parse_new_fd_format(self, line):
+        """Phân tích phụ thuộc hàm theo định dạng mới
+        Ví dụ: 'D E - G' -> FD với LHS={D, E}, RHS={G}
+        """
+        try:
+            # Tách theo dấu '-'
+            if '-' not in line:
+                return None
+            
+            parts = line.split('-')
+            if len(parts) != 2:
+                return None
+            
+            # Phần trái (LHS) và phần phải (RHS)
+            lhs_part = parts[0].strip()
+            rhs_part = parts[1].strip()
+            
+            # Tách các thuộc tính (phân tách bằng khoảng trắng)
+            lhs_attrs = set(lhs_part.split())
+            rhs_attrs = set(rhs_part.split())
+            
+            # Kiểm tra tất cả thuộc tính có trong tập R không
+            all_fd_attrs = lhs_attrs.union(rhs_attrs)
+            if not all_fd_attrs.issubset(self.all_attributes):
+                invalid_attrs = all_fd_attrs - self.all_attributes
+                print(f"Cảnh báo: Thuộc tính {invalid_attrs} không có trong quan hệ R")
+                return None
+            
+            # Tạo đối tượng FD
+            fd = FD(lhs_attrs, rhs_attrs)
+            return fd
+            
+        except Exception as e:
+            print(f"Lỗi phân tích FD '{line}': {str(e)}")
+            return None
     
     def update_stats(self):
         """Cập nhật thống kê"""
@@ -389,4 +435,4 @@ class KeyFinderFrame(tk.Frame):
                     if len(closure) > before_size:
                         changed = True
         
-        return closure 
+        return closure

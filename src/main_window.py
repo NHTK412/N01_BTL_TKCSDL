@@ -5,6 +5,7 @@ from frame.key_finder import KeyFinderFrame
 from frame.minimum_cover import MinimumCoverFrame
 from frame.equivalence import EquivalenceFrame
 from frame.projection import ProjectionFrame
+from frame.normal_form import NormalFormCheckerFrame
 
 
 class main_window(tk.Tk):
@@ -46,7 +47,7 @@ class main_window(tk.Tk):
         self.create_menu()
         self.frames = {}
         
-        for F in (KeyFinderFrame, MinimumCoverFrame, EquivalenceFrame, ProjectionFrame):
+        for F in (KeyFinderFrame, MinimumCoverFrame, EquivalenceFrame, ProjectionFrame, NormalFormCheckerFrame):
             frame = F(self)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
@@ -90,7 +91,8 @@ class main_window(tk.Tk):
         "Kiểm Tra Tương Đương": EquivalenceFrame,
         "Rút Gọn Phụ Thuộc Hàm": MinimumCoverFrame,
         "Chiếu Phụ Thuộc Hàm": ProjectionFrame,
-        "Tìm Khóa": KeyFinderFrame
+        "Tìm Khóa": KeyFinderFrame,
+        "Dạng Chuẩn": NormalFormCheckerFrame
         }
 
         for label, frame_class in frame_menu.items():

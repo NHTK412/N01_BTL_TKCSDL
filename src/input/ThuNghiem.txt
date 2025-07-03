@@ -1,0 +1,4 @@
+ABCD
+A B - C
+B - A
+D - A
